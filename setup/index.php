@@ -22,6 +22,9 @@ require_once OBJECTS_PATH.'/class.flyspray.php';
 require_once OBJECTS_PATH.'/i18n.inc.php';
 require_once OBJECTS_PATH.'/class.tpl.php';
 
+// Load translations
+load_translations();
+
 # must be sure no-cache before any possible redirect, we maybe come back later here after composer install stuff.
 header("Expires: Tue, 03 Jul 2001 06:00:00 GMT");
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
@@ -516,7 +519,7 @@ class Setup extends Flyspray
    */
    public function GetIniSetting($option)
    {
-      return (ini_get($option) == '1' ? 'ON' : 'OFF');
+      return (ini_get($option) == '1' ? L('on') : L('off'));
    }
 
    /**
@@ -580,15 +583,15 @@ class Setup extends Flyspray
       // Array of the setting name, php ini name and the recommended value
       $test_settings =
       array(
-            array ('Safe Mode','safe_mode','OFF'),
-            array ('File Uploads','file_uploads','ON'),
-            array ('Magic Quotes GPC','magic_quotes_gpc','OFF'),
-            array ('Register Globals','register_globals','OFF'),
+            array ('Safe Mode','safe_mode', L('off')),
+            array ('File Uploads','file_uploads', L('on')),
+            array ('Magic Quotes GPC','magic_quotes_gpc', L('off')),
+            array ('Register Globals','register_globals', L('off')),
             //array ('Output Buffering','output_buffering','OFF'),
             );
 
       if (substr(php_sapi_name(), 0, 3) == 'cgi') {
-          $test_settings[] = array ('CGI fix pathinfo','cgi.fix_pathinfo','ON');
+          $test_settings[] = array ('CGI fix pathinfo','cgi.fix_pathinfo', L('on'));
       }
 
       $output = '';
@@ -617,12 +620,12 @@ class Setup extends Flyspray
 
         if ($value == 1) {
 
-                $selection .= '<input type="radio" name="reminder_daemon" value="1" checked="checked" /> Enable';
-                $selection .= '<input type="radio" name="reminder_daemon" value="0" /> Disable';
+                $selection .= '<input type="radio" name="reminder_daemon" value="1" checked="checked" /> '.L('enable');
+                $selection .= '<input type="radio" name="reminder_daemon" value="0" /> '.L('disable');
         } else {
 
-                $selection .= '<input type="radio" name="reminder_daemon" value="1" /> Enable';
-                $selection .= '<input type="radio" name="reminder_daemon" value="0" checked="checked" /> Disable';
+                $selection .= '<input type="radio" name="reminder_daemon" value="1" /> '.L('enable');
+                $selection .= '<input type="radio" name="reminder_daemon" value="0" checked="checked" /> '.L('disable');
         }
             return $selection;
 
@@ -836,6 +839,13 @@ class Setup extends Flyspray
       // Setting the database for the ADODB connection
       require_once($this->mAdodbPath);
 
+	# 20160408 peterdd: hack to enable database socket usage with adodb-5.20.3 . For instance on german 1und1 managed linux servers ( e.g. $db_hostname ='localhost:/tmp/mysql5.sock' )
+	if( $db_type=='mysqli' && 'localhost:/'==substr($db_hostname,0,11) ){
+		$dbsocket=substr($db_hostname,10);
+		$db_hostname='localhost';
+		ini_set( 'mysqli.default_socket', $dbsocket );
+	}
+
       $this->mDbConnection =& NewADOConnection(strtolower($db_type));
       $this->mDbConnection->Connect($db_hostname, $db_username, $db_password, $db_name);
       $this->mDbConnection->SetCharSet('utf8');
@@ -897,11 +907,15 @@ class Setup extends Flyspray
          trigger_error('ADODB Libraries missing or not correct version');
       }
 
+	# 20160408 peterdd: hack to enable database socket usage with adodb-5.20.3 . For instance on german 1und1 managed linux servers ( e.g. $data['db_hostname'] ='localhost:/tmp/mysql5.sock' )
+	if( strtolower($data['db_type'])=='mysqli' && 'localhost:/'==substr($data['db_hostname'],0,11) ){
+		$dbsocket=substr($data['db_hostname'],10);
+		$data['db_hostname']='localhost';
+		ini_set( 'mysqli.default_socket', $dbsocket );
+	}
+
       // Setting the database type for the ADODB connection
       $this->mDbConnection =& NewADOConnection(strtolower($data['db_type']));
-
-      /* check hostname/username/password */
-
       if (!$this->mDbConnection->Connect(array_get($data, 'db_hostname'), array_get($data, 'db_username'), array_get($data, 'db_password'), array_get($data, 'db_name')))
       {
          $_SESSION['page_heading'] = 'Database Processing';
@@ -1088,36 +1102,36 @@ class Setup extends Flyspray
       {
       case 'yes':
          return ($boolean)
-         ?  '<span class="green">Yes</span>'
-         :  '<span class="red">No</span>';
+		 ?  '<span class="green">'.L('yes').'</span>'
+         :  '<span class="red">'.L('no').'</span>';
          break;
 
       case 'available':
          return ($boolean)
-         ?  '<span class="green">Available</span>'
-         :  '<span class="red">Missing</span>';
+         ?  '<span class="green">'.L('available').'</span>'
+         :  '<span class="red">'.L('missing').'</span>';
          break;
 
       case 'writeable':
          return ($boolean)
-         ?  '<span class="green">Writeable</span>'
-         :  '<span class="red">Un-writeable</span>';
+         ?  '<span class="green">'.L('writeable').'</span>'
+         :  '<span class="red">'.L('unwriteable').'</span>';
          break;
 
       case 'on':
          return ($boolean)
-         ?  '<span class="green">ON</span>'
-         :  '<span class="red">OFF</span>';
+         ?  '<span class="green">'.L('on').'</span>'
+         :  '<span class="red">'.L('off').'</span>';
          break;
       case 'support':
          return ($boolean)
-         ?  '<span class="green">Supported</span>'
-         :  '<span class="red">X</span>';
+         ?  '<span class="green">'.L('supported').'</span>'
+         :  '<span class="red">'.L('x').'</span>';
          break;
       default:
          return ($boolean)
-         ?  '<span class="green">True</span>'
-         :  '<span class="red">False</span>';
+         ?  '<span class="green">'.L('true').'</span>'
+         :  '<span class="red">'.L('false').'</span>';
          break;
       }
    }

@@ -219,8 +219,12 @@ switch ($action = Req::val('action'))
 	if( !is_numeric(Post::val('task_severity')) || Post::val('task_severity')>5 || Post::val('task_severity')<0 ){
 		$errors['invalidseverity']=1;
 	}
-
-	if( !is_numeric(Post::val('task_priority')) || Post::val('task_priority')>5 || Post::val('task_priority')<0 ){
+	
+	# peterdd:temp fix to allow pirority 6 again
+	# But I think about 1-5 valid (and 0 for unset) only in future to harmonize
+	# with other trackers/taskplaner software and for severity-priority graphs like
+	# https://en.wikipedia.org/wiki/Time_management#The_Eisenhower_Method
+	if( !is_numeric(Post::val('task_priority')) || Post::val('task_priority')>6 || Post::val('task_priority')<0 ){
 		$errors['invalidpriority']=1;
 	}
 
@@ -624,10 +628,11 @@ switch ($action = Req::val('action'))
             $_SESSION['SUCCESS'] = L('efforttrackingcancelled');
         }
 
-        if(Post::val('manual_effort')){
-            $effort->addEffort(Post::val('effort_to_add'), $proj);
-            $_SESSION['SUCCESS'] = L('efforttrackingadded');
-        }
+	if(Post::val('manual_effort')){
+		if($effort->addEffort(Post::val('effort_to_add'), $proj)){
+			$_SESSION['SUCCESS'] = L('efforttrackingadded');
+		}
+	}
         
         Flyspray::Redirect(CreateURL('details', $task['task_id']).'#effort');
         break;
@@ -842,6 +847,13 @@ switch ($action = Req::val('action'))
         if (Post::val('email_address') != Post::val('verify_email_address'))
         {
             Flyspray::show_error(L('emailverificationwrong'));
+            break;
+        }
+
+        // Check email format
+        if (!Post::val('email_address') || !Flyspray::check_email(Post::val('email_address')))
+        {
+            Flyspray::show_error(L('novalidemail'));
             break;
         }
 
@@ -1350,6 +1362,13 @@ switch ($action = Req::val('action'))
 
                 if (!Post::val('real_name') || (!Post::val('email_address') && !Post::val('jabber_id'))) {
                     Flyspray::show_error(L('realandnotify'));
+                    break;
+                }
+
+                // Check email format
+                if (!Post::val('email_address') || !Flyspray::check_email(Post::val('email_address')))
+                {
+                    Flyspray::show_error(L('novalidemail'));
                     break;
                 }
 
